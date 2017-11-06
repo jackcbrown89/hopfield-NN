@@ -4,6 +4,7 @@
 #include <numeric>
 #include <fstream>
 #include <random>
+#include <sstream>
 
 int rnd_val(unsigned int a, unsigned int b) {
     std::mt19937 rng;
@@ -189,23 +190,36 @@ void txtout_vector(std::ofstream &txtout, std::vector <int> a) {
     }
     txtout << std::endl;
 }
-
-int main() {
-    std::vector < std::string > memory_str_vec;
-
-    std::string input_str = "0001111100000011000000001100000000110000001111110000011100100000110000000011000000001100000001100100";
+std::vector < std::vector <int> > gen_input_vector(std::ifstream &in_stream){
+    std::vector <std::string> memory_str_vec;
     std::string memory_face_str = "0000000000000100010000000000000000000000000010000000000000000001110000001000100001000001101000000001";
     memory_str_vec.push_back(memory_face_str);
     std::string memory_tree_str = "0001111000000111100000001100000000110000001111111000001100100000110000000011000000001100000000110000";
     memory_str_vec.push_back(memory_tree_str);
 
-    auto memories = convert_strings_to_2d_vector(memory_str_vec);
-    auto input = convert_string_to_vector(input_str);
+    std::string line;
+    while (std::getline(in_stream, line)) {
+        memory_str_vec.push_back(line);
+    }
 
-    network net;
+    auto a = convert_strings_to_2d_vector(memory_str_vec);
+    return a;
+}
+
+int main() {
     std::ofstream txtoutput;
     txtoutput.open ("neurons.txt");
+
+    std::ifstream mem_file_stream ("memories.txt");
+    std::ifstream infile ("memories_corr.txt");
     unsigned int size = 100;
+    network net;
+
+    auto memories = gen_input_vector(mem_file_stream);
+    std::string input_str = "0001111100000011000000001100000000110000001111110000011100100000110000000011000000001100000001100100";
+    auto input = convert_string_to_vector(input_str);
+
+
 
     for (int run = 0; run < 10; run++) {
         net.init_input(size, memories, input);

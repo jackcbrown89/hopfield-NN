@@ -2,6 +2,8 @@ import numpy
 import pylab
 
 bin_str = '0001111100000011000000001100000000110000001111110000011100100000110000000011000000001100000001100100'
+lines = open('memories.txt', 'r').readlines()
+lines_corr = open('memories_corrupted.txt', 'r').readlines()
 
 def PrintImageNumber(a):
     for i in numpy.ndarray.flatten(a):
@@ -46,13 +48,21 @@ def MakeImage(neurons):
         bin_arr[i] = neurons[i]
     bin_arr = bin_arr.reshape((10,10))
     return bin_arr
-        
-myImg = MakeImage(bin_str)
-print("This is the binary representation of my image")
-print(bin_str)
-pylab.matshow(myImg)
-pylab.title("Here we go")
-pylab.show()
+
+for line in zip(lines, lines_corr):
+    myImg = MakeImage(line[0].strip())
+    print("This is the binary representation of my image")
+    print(bin_str)
+    pylab.matshow(myImg)
+    pylab.title("Here we go")
+    pylab.show()
+
+    myImg = MakeImage(line[1].strip())
+    print("This is the binary representation of my image")
+    print(bin_str)
+    pylab.matshow(myImg)
+    pylab.title("Here we go")
+    pylab.show()
     
 face=MakeFace()
 print("This is the binary representation of the face")
