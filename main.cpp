@@ -21,11 +21,15 @@ public: unsigned int size = 0;
     std::vector <double> biases;
     std::vector < std::vector <double> > weights;
 
-    void init_random(unsigned int a) {
+    void init_random(unsigned int a, bool verbose) {
         size = a;
         init_random_neurons();
         init_random_biases();
         init_random_weights();
+        if (verbose){
+            cout_neurons();
+            cout_weights();
+        }
     }
     void init_input(unsigned int a, std::vector< std::vector <int> > &memory, std::vector<int> &input_binary) {
         size = a;
@@ -70,6 +74,15 @@ public: unsigned int size = 0;
         }
         return energy;
     }
+    int state() {
+        int sum = 0;
+        for (int i = 0; i < neurons.size(); i++) {
+            if (neurons[i] > 0) {
+                sum += std::pow(2, i);
+            }
+        }
+        return sum;
+    }
     bool update() {
         int rand_n = rnd_val(0, size-1);
         double t_weight = 0.0;
@@ -103,7 +116,6 @@ private: void init_random_neurons() {
         for (auto &neuron : neurons) {
             neuron = static_cast<int> (std::pow(-1, rnd_val(1,6)));
         }
-        cout_vector(neurons);
     }
     void init_random_weights() {
         weights.resize(size);
@@ -122,7 +134,6 @@ private: void init_random_neurons() {
                 }
             }
         }
-        cout_weights();
     }
     void init_random_biases() {
         biases.resize(size);
@@ -131,12 +142,12 @@ private: void init_random_neurons() {
         }
     }
 
-public: void cout_vector(std::vector <int> &a) {
+public: void cout_neurons() {
         std::cout << std::endl;
-        for (auto &item : a) {
-            std::cout << item << std::endl;
+        for (auto &item : neurons) {
+            std::cout << item << "\t";
         }
-        std::cout << "\n\n\n";
+        std::cout << "\n";
     }
     void cout_weights() {
         std::cout << "\nWeights:" << std::endl;
@@ -147,6 +158,15 @@ public: void cout_vector(std::vector <int> &a) {
             std::cout << std::endl;
         }
         std::cout << "\n\n\n";
+    }
+    void cout_state() {
+        int sum = 0;
+        for (int i = 0; i < neurons.size(); i++) {
+            if (neurons[i] > 0) {
+                sum += std::pow(2, i);
+            }
+        }
+        std::cout << sum << std::endl;
     }
 };
 std::vector<std::vector<int>> convert_strings_to_2d_vector(std::vector<std::string> &a) {
@@ -187,7 +207,7 @@ int calculate_hamming_distance (std::vector <int> &target, std::vector <int> &st
 void txtout_value(std::ofstream &txtout, double val) {
     txtout << val <<'\n';
 }
-void txtout_vector(std::ofstream &txtout, std::vector <int> a) {
+void txtout_neuron_vector(std::ofstream &txtout, std::vector <int> a) {
     for (int &neuron : a) {
         if (neuron == -1) {
             txtout << 0;
@@ -195,6 +215,13 @@ void txtout_vector(std::ofstream &txtout, std::vector <int> a) {
         else {
             txtout << 1;
         }
+    }
+    txtout << std::endl;
+}
+void txtout_vector(std::ofstream &txtout, std::vector <int> &a) {
+    for (int i = 0; i < a.size(); i++) {
+        txtout << a[i];
+        if (i != a.size()-1) {txtout << ",";}
     }
     txtout << std::endl;
 }
@@ -221,40 +248,61 @@ std::vector < std::string > gen_input_vector (std::ifstream &in_stream) {
     }
     return memory_str_vec;
 }
+std::vector <int> get_config (int a) {
+    std::vector < int > config;
+    config.resize(static_cast<unsigned int> (ceil(log2(a))));
+    std::fill(config.begin(), config.end(), 1);
+    for(int change = 0; change <= a; ++change) {
+        for (int &i : config) {
+            if (i == 1) {
+                i = -1;
+            }
+            else {
+                i = 1;
+                break;
+            }
+        }
+    }
+    return config;
+}
+bool in_vector_int (int a, std::vector<int> &b) {
+    for (int &c: b) {
+        if (a == c){
+            return true;
+        }
+    }
+    return false;
+}
 
 int main() {
     std::ofstream txtoutput;
-    txtoutput.open ("hamming_distances/hamming_distances_fracs_100.txt");
+    txtoutput.open ("net_diagram/results.txt");
 
-    std::ifstream mem_file_stream ("corrupted_memories/memories_corrupted_fracs_100.txt");
-    std::ifstream infile ("memories/memories_100.txt");
-    unsigned int size = 100;
+    unsigned int size = 6;
     unsigned int num_runs = 10;
+    std::vector<int> final_configs;
     network net;
 
-    auto memories = gen_memory_vector(mem_file_stream);
-    mem_file_stream.close();
-    auto input = gen_input_vector(infile);
-    infile.close();
-
-    std::vector <int> hamming_distances;
-    for (int i = 0; i < input.size(); i++) {
+    for (int config = 0; config <= std::pow(2, size); config++) {
+        final_configs.clear();
         for (int run = 0; run < num_runs; run++) {
-            auto in_vec = convert_string_to_vector(input[i]);
-            net.init_input(size, memories, in_vec);
+            net.init_random(size, false);
+
+            auto config_vector = get_config(config);
+            net.init_neurons(config_vector);
 
             while (!net.converged()) {
                 net.update();
             }
-            int hamming_distance = calculate_hamming_distance(memories[i], net.neurons);
-            hamming_distances.push_back(hamming_distance);
+            net.cout_state();
+            std::cout << config << std::endl << std::endl;
+            if (!in_vector_int(net.state(), final_configs)) {
+                final_configs.push_back(net.state());
+            }
         }
-        double avg_hd = std::accumulate(hamming_distances.begin(), hamming_distances.end(), 0.0)/hamming_distances.size();
-        hamming_distances.clear();
-        std::cout << avg_hd << std::endl;
-        if (i == input.size()) {txtoutput << avg_hd;}
-        else {txtoutput << avg_hd << std::endl;}
+        txtout_vector(txtoutput, final_configs);
     }
     txtoutput.close();
+    //for (int &i : get_config(9)) std::cout << i << std::endl;
     return 0;
 }
