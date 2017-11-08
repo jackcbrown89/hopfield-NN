@@ -16,6 +16,7 @@ int rnd_val(unsigned int a, unsigned int b) {
 class network {
 
 public: unsigned int size = 0;
+    int hamming_distance = 0;
     std::vector <int> neurons;
     std::vector <double> biases;
     std::vector < std::vector <double> > weights;
@@ -38,7 +39,6 @@ public: unsigned int size = 0;
         for (int i = 0; i < img_size; i++) {
             weights[i].resize(img_size);
         }
-
         for(std::vector<int> &a : mem) {
             std::vector<int> v;
             v.resize(img_size);
@@ -164,18 +164,26 @@ std::vector<std::vector<int>> convert_strings_to_2d_vector(std::vector<std::stri
     return bin_vec;
 }
 std::vector<int> convert_string_to_vector(std::string &a) {
-    std::vector<int> input;
+    std::vector<int> c;
     for (char &b : a) {
         if (b == '0') {
-            input.push_back(-1);
+            c.push_back(-1*1);
         }
         else {
-            input.push_back(1);
+            c.push_back(1);
         }
     }
-    return input;
+    return c;
 }
-
+int calculate_hamming_distance (std::vector <int> &target, std::vector <int> &state) {
+    int hd = 0;
+    for (int i = 0; i < target.size(); i++) {
+        if (target[i] != state[i]) {
+            hd++;
+        }
+    }
+    return hd;
+}
 void txtout_value(std::ofstream &txtout, double val) {
     txtout << val <<'\n';
 }
@@ -190,12 +198,12 @@ void txtout_vector(std::ofstream &txtout, std::vector <int> a) {
     }
     txtout << std::endl;
 }
-std::vector < std::vector <int> > gen_input_vector(std::ifstream &in_stream){
+std::vector < std::vector <int> > gen_memory_vector(std::ifstream &in_stream) {
     std::vector <std::string> memory_str_vec;
-    std::string memory_face_str = "0000000000000100010000000000000000000000000010000000000000000001110000001000100001000001101000000001";
-    memory_str_vec.push_back(memory_face_str);
-    std::string memory_tree_str = "0001111000000111100000001100000000110000001111111000001100100000110000000011000000001100000000110000";
-    memory_str_vec.push_back(memory_tree_str);
+    //std::string memory_face_str = "0000000000000100010000000000000000000000000010000000000000000001110000001000100001000001101000000001";
+    //memory_str_vec.push_back(memory_face_str);
+    //std::string memory_tree_str = "0001111000000111100000001100000000110000001111111000001100100000110000000011000000001100000000110000";
+    //memory_str_vec.push_back(memory_tree_str);
 
     std::string line;
     while (std::getline(in_stream, line)) {
@@ -205,31 +213,47 @@ std::vector < std::vector <int> > gen_input_vector(std::ifstream &in_stream){
     auto a = convert_strings_to_2d_vector(memory_str_vec);
     return a;
 }
+std::vector < std::string > gen_input_vector (std::ifstream &in_stream) {
+    std::vector <std::string> memory_str_vec;
+    std::string line;
+    while (std::getline(in_stream, line)) {
+        memory_str_vec.push_back(line);
+    }
+    return memory_str_vec;
+}
 
 int main() {
     std::ofstream txtoutput;
-    txtoutput.open ("neurons.txt");
+    txtoutput.open ("hamming_distances/hamming_distances_fracs_100.txt");
 
-    std::ifstream mem_file_stream ("memories.txt");
-    std::ifstream infile ("memories_corr.txt");
+    std::ifstream mem_file_stream ("corrupted_memories/memories_corrupted_fracs_100.txt");
+    std::ifstream infile ("memories/memories_100.txt");
     unsigned int size = 100;
+    unsigned int num_runs = 10;
     network net;
 
-    auto memories = gen_input_vector(mem_file_stream);
-    std::string input_str = "0001111100000011000000001100000000110000001111110000011100100000110000000011000000001100000001100100";
-    auto input = convert_string_to_vector(input_str);
+    auto memories = gen_memory_vector(mem_file_stream);
+    mem_file_stream.close();
+    auto input = gen_input_vector(infile);
+    infile.close();
 
+    std::vector <int> hamming_distances;
+    for (int i = 0; i < input.size(); i++) {
+        for (int run = 0; run < num_runs; run++) {
+            auto in_vec = convert_string_to_vector(input[i]);
+            net.init_input(size, memories, in_vec);
 
-
-    for (int run = 0; run < 10; run++) {
-        net.init_input(size, memories, input);
-        txtout_vector(txtoutput, net.neurons);
-        net.cout_vector(net.neurons);
-        while (!net.converged()) {
-            net.update();
-            txtout_vector(txtoutput, net.neurons);
+            while (!net.converged()) {
+                net.update();
+            }
+            int hamming_distance = calculate_hamming_distance(memories[i], net.neurons);
+            hamming_distances.push_back(hamming_distance);
         }
-        if (run < 10-1) {txtoutput << "\n";}
+        double avg_hd = std::accumulate(hamming_distances.begin(), hamming_distances.end(), 0.0)/hamming_distances.size();
+        hamming_distances.clear();
+        std::cout << avg_hd << std::endl;
+        if (i == input.size()) {txtoutput << avg_hd;}
+        else {txtoutput << avg_hd << std::endl;}
     }
     txtoutput.close();
     return 0;
