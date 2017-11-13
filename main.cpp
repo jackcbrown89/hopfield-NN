@@ -96,6 +96,18 @@ public: unsigned int size = 0;
         neurons[rand_n] = -1;
         return false;
     }
+    bool update_neuron(int n) {
+        double t_weight = 0.0;
+        for (int i = 0; i < weights[n].size(); i++) {
+            t_weight += weights[n][i]*neurons[i];
+        }
+        if (t_weight > biases[n]) {
+            neurons[n] = 1;
+            return true;
+        }
+        neurons[n] = -1;
+        return false;
+    }
     bool converged() {
         for (int n = 0; n < neurons.size(); n++) {
             double t_weight = 0.0;
@@ -225,6 +237,20 @@ void txtout_vector(std::ofstream &txtout, std::vector <int> &a) {
     }
     txtout << std::endl;
 }
+void cout_string_vector(std::vector<std::string> &a) {
+    for (int i = 0; i < a.size(); i++) {
+        std::cout << a[i];
+        if (i != a.size()-1) {std::cout << ",";}
+    }
+    std::cout << std::endl;
+}
+void cout_int_vector(std::vector<int> &a) {
+    for (int i = 0; i < a.size(); i++) {
+        std::cout << a[i];
+        if (i != a.size()-1) {std::cout << ",";}
+    }
+    std::cout << std::endl;
+}
 std::vector < std::vector <int> > gen_memory_vector(std::ifstream &in_stream) {
     std::vector <std::string> memory_str_vec;
     //std::string memory_face_str = "0000000000000100010000000000000000000000000010000000000000000001110000001000100001000001101000000001";
@@ -276,32 +302,71 @@ bool in_vector_int (int a, std::vector<int> &b) {
 
 int main() {
     std::ofstream txtoutput;
-    txtoutput.open ("net_diagram/results.txt");
+    txtoutput.open ("hamming_distances/hamming_distances_fracs_0-80.txt");
+    std::ifstream infile ("memories/memories_0-80.txt");
 
-    unsigned int size = 6;
-    unsigned int num_runs = 10;
-    std::vector<int> final_configs;
-    network net;
+    auto true_memories = gen_memory_vector(infile);
+    infile.close();
 
-    for (int config = 0; config <= std::pow(2, size); config++) {
-        final_configs.clear();
-        for (int run = 0; run < num_runs; run++) {
-            net.init_random(size, false);
-
-            auto config_vector = get_config(config);
-            net.init_neurons(config_vector);
-
-            while (!net.converged()) {
-                net.update();
-            }
-            net.cout_state();
-            std::cout << config << std::endl << std::endl;
-            if (!in_vector_int(net.state(), final_configs)) {
-                final_configs.push_back(net.state());
-            }
-        }
-        txtout_vector(txtoutput, final_configs);
+    std::vector <int> groups;
+    groups.reserve(80);
+    for (int i = 0; i < 80; i++) {
+        groups.push_back(i*(i+1)/2);
     }
+    cout_int_vector(groups);
+    unsigned int size = 100;
+    unsigned int num_runs = 1;
+    std::vector <int> final_configs;
+    network net;
+    for (int group = 0; group < 80-1; group++) {
+        for (int corr_frac = 0; corr_frac < 60; corr_frac = corr_frac + 5) {
+            std::vector<std::vector<int> > group_mems(true_memories.begin() + groups[group],
+                                                      true_memories.begin() + groups[group + 1]);
+
+            if (corr_frac != 0) {
+                auto corr_input = group_mems[0];
+                for (int spin = 0; spin < corr_frac; spin++) {
+                    auto pos = rnd_val(0, size);
+                    corr_input[pos] = corr_input[pos] * -1;
+                }
+                net.init_input(size, group_mems, corr_input);
+            }
+            else {
+                net.init_input(size, group_mems, group_mems[0]);
+            }
+            net.hamming_distance = calculate_hamming_distance(group_mems[0], net.neurons);
+
+            txtout_value(txtoutput, net.hamming_distance);
+        }
+    }
+
+//    for (int config = 0; config <= std::pow(2, size); config++) {
+//        final_configs.clear();
+//        for (int run = 0; run < num_runs; run++) {
+//            net.init_random(size, false);
+//
+//            auto config_vector = get_config(config);
+//            net.init_neurons(config_vector);
+//
+//            for (int n = 0; n < net.size; n++) {
+//                net.init_neurons(config_vector);
+//                net.update_neuron(n);
+//                if (!in_vector_int(net.state(), final_configs)) {
+//                    final_configs.push_back(net.state());
+//                }
+//            }
+//
+//            //while (!net.converged()) {
+//            //    net.update();
+//            //}
+//            //net.cout_state();
+//            //std::cout << config << std::endl << std::endl;
+//            //if (!in_vector_int(net.state(), final_configs)) {
+//            //    final_configs.push_back(net.state());
+//            //}
+//        }
+//        txtout_vector(txtoutput, final_configs);
+//    }
     txtoutput.close();
     //for (int &i : get_config(9)) std::cout << i << std::endl;
     return 0;

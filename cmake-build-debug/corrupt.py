@@ -1,16 +1,18 @@
 import numpy as np
 from numpy.random import random_integers, randint
-num_mems = '100'
-fracs = [10, 20, 30, 40, 50, 60]
+num_mems = '0-80'
+fracs = [0, 5, 10, 15, 20, 25, 30, 35, 40, 45, 50, 55, 60]
 lines = open('memories/memories_%s.txt' % num_mems, 'r').readlines()
 new_lines = ""
 k_str = ""
 f = open('corrupted_memories/memories_corrupted_fracs_%s.txt' % num_mems, 'w')
 
 info = open('corrupted_memory_info/memories_corr_info_fracs_%s.txt' % num_mems, 'w')
-
-for line in lines:
-    line = list(line.strip())
+groups = [x*(x+1)//2 for x in range(1, 80)]
+print(groups)
+for i in groups:
+    print(i)
+    line = list(lines[i-1].strip())
     line = np.array(line)
     # num_k = randint(0, line.size)
     for frac in fracs:
@@ -29,8 +31,9 @@ for line in lines:
 
         new_lines += '\n'
         k_str += '\n'
-
+f.writelines(lines[0])
 f.writelines(new_lines[:-1])
+info.writelines('0\n')
 info.writelines(k_str[:-1])
 f.close()
 info.close()
