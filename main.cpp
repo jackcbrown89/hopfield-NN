@@ -1,10 +1,35 @@
 #include <iostream>
+#include <random>
 #include <vector>
 #include <cmath>
 #include <numeric>
 #include <fstream>
 #include <random>
 #include <sstream>
+#ifndef _COLORS_
+#define _COLORS_
+/* FOREGROUND */
+#define RST  "\x1B[0m"
+#define KRED  "\x1B[31m"
+#define KGRN  "\x1B[32m"
+#define KYEL  "\x1B[33m"
+#define KBLU  "\x1B[34m"
+#define KMAG  "\x1B[35m"
+#define KCYN  "\x1B[36m"
+#define KWHT  "\x1B[37m"
+
+#define FRED(x) KRED x RST
+#define FGRN(x) KGRN x RST
+#define FYEL(x) KYEL x RST
+#define FBLU(x) KBLU x RST
+#define FMAG(x) KMAG x RST
+#define FCYN(x) KCYN x RST
+#define FWHT(x) KWHT x RST
+
+#define BOLD(x) "\x1B[1m" x RST
+#define UNDL(x) "\x1B[4m" x RST
+
+#endif  /* _COLORS_ */
 
 int rnd_val(unsigned int a, unsigned int b) {
     std::mt19937 rng;
@@ -16,13 +41,16 @@ int rnd_val(unsigned int a, unsigned int b) {
 class network {
 
 public: unsigned int size = 0;
-    int hamming_distance = 0;
+    double hamming_distance = 0;
     std::vector <int> neurons;
     std::vector <double> biases;
     std::vector < std::vector <double> > weights;
 
     void init_random(unsigned int a, bool verbose) {
         size = a;
+        std::vector <int> neurons;
+        std::vector <double> biases;
+        std::vector < std::vector <double> > weights;
         init_random_neurons();
         init_random_biases();
         init_random_weights();
@@ -33,6 +61,9 @@ public: unsigned int size = 0;
     }
     void init_input(unsigned int a, std::vector< std::vector <int> > &memory, std::vector<int> &input_binary) {
         size = a;
+        std::vector <int> neurons;
+        std::vector <double> biases;
+        std::vector < std::vector <double> > weights;
         init_neurons(input_binary);
         init_random_biases();
         init_weights(memory);
@@ -181,6 +212,14 @@ public: void cout_neurons() {
         std::cout << sum << std::endl;
     }
 };
+std::vector<int> random_binary (int size) {
+    std::vector<int> bin;
+    bin.reserve(size);
+    for (int i = 0; i < size; i++) {
+        bin.push_back(static_cast<int> (std::pow(-1, rnd_val(0, 100))));
+    }
+    return bin;
+}
 std::vector<std::vector<int>> convert_strings_to_2d_vector(std::vector<std::string> &a) {
     std::vector<std::vector<int>> bin_vec;
     bin_vec.resize(a.size());
@@ -215,6 +254,14 @@ int calculate_hamming_distance (std::vector <int> &target, std::vector <int> &st
         }
     }
     return hd;
+}
+bool in_vector_int (int a, std::vector<int> &b) {
+    for (int &c: b) {
+        if (a == c){
+            return true;
+        }
+    }
+    return false;
 }
 void txtout_value(std::ofstream &txtout, double val) {
     txtout << val <<'\n';
@@ -251,6 +298,144 @@ void cout_int_vector(std::vector<int> &a) {
     }
     std::cout << std::endl;
 }
+void cout_neuron_vector(std::vector<int> &a) {
+    for (int &neuron : a) {
+        if (neuron == -1) {
+            std::cout << 0;
+        }
+        else {
+            std::cout << 1;
+        }
+    }
+    std::cout << std::endl;
+}
+void cout_differences_2_vectors(std::vector<int> a, std::vector<int> b) {
+        //std::cout << "a" << a.size() << "b" << "\n";
+        std::vector<int> diff_ind;
+        for (int i = 0; i < a.size(); i++) {
+            if (a[i] != b[i]) {
+                diff_ind.push_back(i);
+            }
+        }
+        for (int i = 0; i < a.size(); i++) {
+            if (in_vector_int(i, diff_ind)) {
+                if (a[i] == -1) {
+                    std::cout << FRED("0");
+                }
+                else {
+                    std::cout << FRED("1");
+                }
+            } else {
+                if (a[i] == -1) {
+                    std::cout << "0";
+                }
+                else {
+                    std::cout << "1";
+                }
+            }
+        }
+        std::cout << "\n";
+        for (int i = 0; i < b.size(); i++) {
+            if (in_vector_int(i, diff_ind)) {
+                if (b[i] == -1) {
+                    std::cout << FRED("0");
+                }
+                else {
+                    std::cout << FRED("1");
+                }
+            } else {
+                if (b[i] == -1) {
+                    std::cout << "0";
+                }
+                else {
+                    std::cout << "1";
+                }
+            }
+        }
+        std::cout << "\n";
+    }
+void cout_differences_3_vectors(std::vector<int> true_mem, std::vector<int> corr_mem, std::vector<int> result_mem) {
+    std::vector<int> diff_ind;
+    for (int i = 0; i < true_mem.size(); i++) {
+        if (true_mem[i] != result_mem[i] || corr_mem[i] != true_mem[i]) {// || true_mem[i] != result_mem[i] || corr_mem[i] != result_mem[i]) {
+            diff_ind.push_back(i);
+        }
+    }
+    for (int i = 0; i < true_mem.size(); i++) {
+        if (in_vector_int(i, diff_ind)) {
+            if (true_mem[i] != corr_mem[i]) {
+                if (true_mem[i] == -1) {
+                    std::cout << FGRN("0");
+                }
+                else {
+                    std::cout << FGRN("1");
+                }
+            }
+            else {
+                if (true_mem[i] == -1) {
+                    std::cout << FRED("0");
+                }
+                else {
+                    std::cout << FRED("1");
+                }
+            }
+        } else {
+            if (true_mem[i] == -1) {
+                std::cout << "0";
+            }
+            else {
+                std::cout << "1";
+            }
+        }
+    }
+    std::cout << "\n";
+    for (int i = 0; i < corr_mem.size(); i++) {
+        if (in_vector_int(i, diff_ind)) {
+            if (true_mem[i] != corr_mem[i]) {
+                if (corr_mem[i] == -1) {
+                    std::cout << FGRN("0");
+                }
+                else {
+                    std::cout << FGRN("1");
+                }
+            }
+            else {
+                if (corr_mem[i] == -1) {
+                    std::cout << FRED("0");
+                }
+                else {
+                    std::cout << FRED("1");
+                }
+            }
+        } else {
+            if (corr_mem[i] == -1) {
+                std::cout << "0";
+            }
+            else {
+                std::cout << "1";
+            }
+        }
+    }
+    std::cout << "\n";
+    for (int i = 0; i < result_mem.size(); i++) {
+        if (in_vector_int(i, diff_ind)) {
+            if (result_mem[i] == -1) {
+                std::cout << FRED("0");
+            }
+            else {
+                std::cout << FRED("1");
+            }
+        } else {
+            if (result_mem[i] == -1) {
+                std::cout << "0";
+            }
+            else {
+                std::cout << "1";
+            }
+        }
+    }
+    std::cout << "\n";
+}
 std::vector < std::vector <int> > gen_memory_vector(std::ifstream &in_stream) {
     std::vector <std::string> memory_str_vec;
     //std::string memory_face_str = "0000000000000100010000000000000000000000000010000000000000000001110000001000100001000001101000000001";
@@ -274,9 +459,9 @@ std::vector < std::string > gen_input_vector (std::ifstream &in_stream) {
     }
     return memory_str_vec;
 }
-std::vector <int> get_config (int a) {
+std::vector <int> get_config (int a, unsigned int size) {
     std::vector < int > config;
-    config.resize(static_cast<unsigned int> (ceil(log2(a))));
+    config.resize(size);
     std::fill(config.begin(), config.end(), 1);
     for(int change = 0; change <= a; ++change) {
         for (int &i : config) {
@@ -291,83 +476,70 @@ std::vector <int> get_config (int a) {
     }
     return config;
 }
-bool in_vector_int (int a, std::vector<int> &b) {
-    for (int &c: b) {
-        if (a == c){
-            return true;
-        }
-    }
-    return false;
-}
 
 int main() {
+    //std::string line_break = "\n****************************************************************************************\n";
     std::ofstream txtoutput;
-    txtoutput.open ("hamming_distances/hamming_distances_fracs_0-80.txt");
-    std::ifstream infile ("memories/memories_0-80.txt");
+    txtoutput.open ("hamming_distances/hamming_distances_fracs_0-80_up1.txt");
 
-    auto true_memories = gen_memory_vector(infile);
-    infile.close();
+//    std::vector <int> groups;
+//    groups.reserve(80);
+//    for (int i = 0; i < 80; i++) {
+//        groups.push_back(i*(i+1)/2);
+//    }
 
-    std::vector <int> groups;
-    groups.reserve(80);
-    for (int i = 0; i < 80; i++) {
-        groups.push_back(i*(i+1)/2);
-    }
-    cout_int_vector(groups);
     unsigned int size = 100;
-    unsigned int num_runs = 1;
-    std::vector <int> final_configs;
-    network net;
-    for (int group = 0; group < 80-1; group++) {
-        for (int corr_frac = 0; corr_frac < 60; corr_frac = corr_frac + 5) {
-            std::vector<std::vector<int> > group_mems(true_memories.begin() + groups[group],
-                                                      true_memories.begin() + groups[group + 1]);
+    int loop_count = 20;
+    std::vector <int> indeces;
+    indeces.reserve(size);
+    for (int i = 0; i < size; i++) {
+        indeces.push_back(i);
+    }
+    for (unsigned int group_size = 1; group_size < 80; group_size++) {
+        std::cout << group_size << "\n";
+        for (int corr_frac = 0; corr_frac <= 60; corr_frac = corr_frac + 5) {
+            double avg_hd = 0;
+            if (corr_frac == 0) {goto label;}
+            for (int loop = 0; loop < loop_count; loop++) {
 
-            if (corr_frac != 0) {
-                auto corr_input = group_mems[0];
-                for (int spin = 0; spin < corr_frac; spin++) {
-                    auto pos = rnd_val(0, size);
-                    corr_input[pos] = corr_input[pos] * -1;
+                // create random set of memories S of size group_size
+                // train HN on S
+                // corrupt pixel of the first memory of S, corr_frac times
+                // run until converged
+                // add to avg hamming distance
+                network net;
+                std::vector<std::vector<int> > group_mems;
+                group_mems.reserve(group_size);
+                for (int i = 0; i < group_size; i++) {
+                    group_mems.push_back(random_binary(size));
                 }
-                net.init_input(size, group_mems, corr_input);
-            }
-            else {
-                net.init_input(size, group_mems, group_mems[0]);
-            }
-            net.hamming_distance = calculate_hamming_distance(group_mems[0], net.neurons);
+                std::shuffle(indeces.begin(), indeces.end(), std::mt19937(std::random_device()()));
+                auto corr_input = group_mems[0];
 
-            txtout_value(txtoutput, net.hamming_distance);
+                for (int spin = 0; spin < corr_frac; spin++) {
+                    corr_input[indeces[spin]] = corr_input[indeces[spin]] * -1;
+                }
+
+                net.init_input(size, group_mems, corr_input);
+
+                while (!net.converged()) {
+                    net.update();
+                }
+                net.hamming_distance = calculate_hamming_distance(group_mems[0], net.neurons);
+                if (net.hamming_distance > 10.0) {
+                    std::cerr << "Large Difference:\t" << net.hamming_distance << std::endl;
+                    cout_differences_3_vectors(group_mems[0], corr_input, net.neurons);
+                    std::cout << "\n";
+                }
+                avg_hd += net.hamming_distance/loop_count;
+
+            }
+            label:
+            //std::cout << line_break << "Number of Images: " << group_size << "\t|\tCorruption fraction: " << corr_frac
+            //                        << "\t|\tAverage Hamming Distance: " << avg_hd << line_break << "\n";
+            txtout_value(txtoutput, avg_hd);
         }
     }
-
-//    for (int config = 0; config <= std::pow(2, size); config++) {
-//        final_configs.clear();
-//        for (int run = 0; run < num_runs; run++) {
-//            net.init_random(size, false);
-//
-//            auto config_vector = get_config(config);
-//            net.init_neurons(config_vector);
-//
-//            for (int n = 0; n < net.size; n++) {
-//                net.init_neurons(config_vector);
-//                net.update_neuron(n);
-//                if (!in_vector_int(net.state(), final_configs)) {
-//                    final_configs.push_back(net.state());
-//                }
-//            }
-//
-//            //while (!net.converged()) {
-//            //    net.update();
-//            //}
-//            //net.cout_state();
-//            //std::cout << config << std::endl << std::endl;
-//            //if (!in_vector_int(net.state(), final_configs)) {
-//            //    final_configs.push_back(net.state());
-//            //}
-//        }
-//        txtout_vector(txtoutput, final_configs);
-//    }
     txtoutput.close();
-    //for (int &i : get_config(9)) std::cout << i << std::endl;
     return 0;
 }

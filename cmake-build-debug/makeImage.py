@@ -2,7 +2,7 @@ import numpy
 import pylab
 
 bin_str = '0001111100000011000000001100000000110000001111110000011100100000110000000011000000001100000001100100'
-lines = open('memories.txt', 'r').readlines()
+lines = open('memories/memories.txt', 'r').readlines()
 lines_corr = open('memories_corrupted.txt', 'r').readlines()
 
 def PrintImageNumber(a):
